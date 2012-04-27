@@ -38,6 +38,11 @@ Vim utilities
 
         $ vdb 19
 
++ *vds* - Dump session, print all buffers as a possibly huge json blob
+
+        $ vds
+
+
 
 ### RC File
 

@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import json
+import re
 
 VIMUTILS_DEFAULT_RC = os.path.join(os.environ["HOME"], ".vimutilsrc")
 
@@ -42,6 +43,18 @@ class VimUtils(object):
         else:
             return False
 
+    def run_command(self,command,servername=None):
+        if servername == None:
+            servername = self.rc["default_server"]
+    
+        return subprocess.check_output([
+                self.rc["vim_cmd"],
+                "--servername",
+                servername,
+                "--remote-expr",
+                "VimUtilsCommandOutput(\"%s\")" % command])
+    
+
     def open_files(self, files, servername=None):
         if servername == None:
             servername = self.rc["default_server"]
@@ -52,6 +65,7 @@ class VimUtils(object):
                 raise Exception
         return True
 
+
     def open_tabs(self, files, servername=None):
         if servername == None:
             servername = self.rc["default_server"]
@@ -61,11 +75,72 @@ class VimUtils(object):
         if os.system(cmdstr) != 0:
             raise Exception
 
+
     def buffers(self, servername=None):
         if servername == None:
             servername = self.rc["default_server"]
         return subprocess.check_output([
                 self.rc["vim_cmd"],"--servername", servername, "--remote-expr", "VimUtilsCommandOutput(\":buffers\")"]) 
+
+
+
+    def buffers_object(self,servername=None):
+        if servername == None:
+            servername = self.rc["default_server"]
+        outp = self.run_command("buffers", servername)
+        
+        lines = outp.strip().split("\n")
+        bufs = []
+
+        for line in lines:
+            bufar = re.split('\s+',line.strip().replace("line",""))
+            if len(bufar) == 3:
+                bufar.insert(1,"") #If theres no mode, insert None
+            bufar[2] = bufar[2].replace("\"", "")
+
+            buf = {
+                "id" : int(bufar[0]),
+                "mode" : bufar[1],
+                "file" : bufar[2],
+                "line" : bufar[3],
+                "unlisted" : False,
+                "current" : False,
+                "alternate" : False,
+                "active" : False,
+                "hidden" : False,
+                "modifiable" : True,
+                "readonly" : False,
+                "modified" : False,
+                "readerrors" : False
+            }
+
+            for m in bufar[1]:
+                if m == "u":
+                    buf["unlisted"] = True
+                elif m == "%":
+                    buf["current"]  = True
+                elif m == "#":
+                    buf["alternate"] = True
+                elif m == "a":
+                    buf["active"] = True
+                elif m == "h":
+                    buf["hidden"] = True
+                elif m == "-":
+                    buf["modifiable"] = False
+                elif m == "=":
+                    buf["readonly"] = True
+                elif m == "+":
+                    buf["modified"] = True
+                elif m == "x":
+                    buf["readerror"] = True
+                else:
+                    continue
+
+            bufs.append(buf)
+            
+        return bufs
+
+
 
     def dump_buffer(self, bufno, servername=None):
         if servername == None:
@@ -84,6 +159,14 @@ class VimUtils(object):
             
 
 
+    def get_session(self,servername=None):
+        if servername == None:
+            servername = self.rc["default_server"]
+        out = []
+        for buf in self.buffers_object(servername):
+            buf["content"] = self.dump_buffer(buf["id"])
+            out.append(buf)
+        return out
             
 
 
