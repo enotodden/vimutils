@@ -17,7 +17,8 @@ setup(
 							"vs",
 							"vls",
                             "vbls",
-                            "vdb"
+                            "vdb",
+                            "vds"
 						]
 )
 
