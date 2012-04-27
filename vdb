@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+import vimutils
+import sys
+
+def usage():
+    print("""
+vdb - dumps vim buffer
+Usage: vdb [BUFFER NUMBER]
+    """)
+
+def main():
+    v = vimutils.VimUtils()
+    print(v.dump_buffer(int(sys.argv[1])))
+main()
+
+

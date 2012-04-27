@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+import vimutils
+import sys
+
+def main():
+    v = vimutils.VimUtils()
+    print(v.buffers())
+
+
+main()

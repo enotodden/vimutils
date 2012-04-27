@@ -61,7 +61,27 @@ class VimUtils(object):
         if os.system(cmdstr) != 0:
             raise Exception
 
+    def buffers(self, servername=None):
+        if servername == None:
+            servername = self.rc["default_server"]
+        return subprocess.check_output([
+                self.rc["vim_cmd"],"--servername", servername, "--remote-expr", "VimUtilsCommandOutput(\":buffers\")"]) 
 
+    def dump_buffer(self, bufno, servername=None):
+        if servername == None:
+            servername = self.rc["default_server"]
+        filename = subprocess.check_output([
+                    self.rc["vim_cmd"],
+                    "--servername",
+                    servername,
+                    "--remote-expr",
+                    "VimUtilsWriteBufferToTmpFile(\"%s\")" % (str(bufno))
+                ]).strip()
+        f = open(filename, "r")
+        contents = f.read()
+        f.close()
+        return contents
+            
 
 
             

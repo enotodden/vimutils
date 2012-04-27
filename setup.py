@@ -7,7 +7,7 @@ setup(
 	description		=	"Vim utilities..",
 	author			=	"Espen Notodden",
 	author_email	=	"enotodden@gmail.com",
-	url				=	"http://enotodden.net/vimutils",
+	url				=	"http://github.com/enotodden/vimutils",
 	packages		=	[
 							'vimutils'
 						],
@@ -15,7 +15,9 @@ setup(
 							"vt",
 							"ve",
 							"vs",
-							"vls"
+							"vls",
+                            "vbls",
+                            "vdb"
 						]
 )
 
