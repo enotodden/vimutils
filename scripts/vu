@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+import vimutils
+import sys
+import argparse
+import json
+
+def vls(v):
+    for server in v.servers():
+        print(server)
+
+def vs(v):
+    if v.start() == False:
+        print("Server %s already running." % (server))
+
+def vbls(v):
+    print(v.buffers())
+
+def vdb(v,n):
+    print(v.dump_buffer(int(n)))
+
+def vds(v):
+    print(json.dumps(v.get_session()))
+
+def ve(v,files):
+    v.open_files(files)
+
+def vt(v,files):
+    v.open_tabs(files)
+
+
+
+def usage(ap):
+    pass
+
+
+def main():
+    argp = argparse.ArgumentParser()
+    
+    argp.add_argument("-l", "--list-servers",
+            action="store_true")
+
+    argp.add_argument("-s", "--start-server",
+            action="store_true")
+    
+    argp.add_argument("-b", "--list-buffers",
+            action="store_true")
+    
+    argp.add_argument("-d", "--dump-buffer",
+            action="store", type=int)
+    
+    argp.add_argument("-D", "--dump-session",
+            action="store_true")
+
+    argp.add_argument("-o", "--open",
+            action="store_true")
+    
+    argp.add_argument("-t", "--tabs",
+            action="store_true")
+    
+    argp.add_argument("-S", "--servername",
+            action="store")
+    
+    argp.add_argument("-r", "--rcfile",
+            action="store")
+    
+    argp.add_argument("-C", "--command",
+            action="store")
+
+    argp.add_argument("files",nargs="*")
+    
+    args = argp.parse_args()
+
+    rcfile = None
+    server = None
+
+    if args.rcfile:
+        rcfile = args.rcfile
+
+    if args.servername:
+        server = args.servername
+
+    v = vimutils.VimUtils(server, rcfile)
+
+    if args.list_servers:
+        vls(v)
+
+    if args.start_server:
+        vs(v)
+
+    if args.list_buffers:
+        vbls(v)
+
+    if args.dump_buffer != None:
+        vdb(v, args.dump_buffer)
+
+    if args.dump_session:
+        vds(v)
+
+    if args.open:
+        files = args.files
+        if files == None:
+            print("No files specified")
+            exit(1)
+        ve(v,files)
+
+    if args.tabs:
+        files = args.files
+        if files == None:
+            print("No files specified")
+            exit(1)
+        vt(v,files)
+
+
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+
