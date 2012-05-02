@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-import vimutils
-import json
-
-def main():
-    v = vimutils.VimUtils()
-    print(json.dumps(v.get_session()))
-
-main()
