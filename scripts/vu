@@ -27,6 +27,9 @@ def ve(v,files):
 def vt(v,files):
     v.open_tabs(files)
 
+def vc(v, cmd):
+    print(v.run_command(cmd))
+
 
 
 def usage(ap):
@@ -110,7 +113,8 @@ def main():
             exit(1)
         vt(v,files)
 
-
+    if args.command:
+        vc(v,args.command)
 
 
 

@@ -19,7 +19,8 @@ setup(
         "scripts/vbls",
         "scripts/vdb",
         "scripts/vds",
-        "scripts/vu"
+        "scripts/vu",
+        "scripts/vc"
     ]
 )
 
