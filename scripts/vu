@@ -30,6 +30,9 @@ def vt(v,files):
 def vc(v, cmd):
     print(v.run_command(cmd))
 
+def vdf(v, files):
+    v.open_diff_files(files)
+
 
 
 def usage(ap):
@@ -59,6 +62,9 @@ def main():
     
     argp.add_argument("-t", "--tabs",
             action="store_true")
+
+    argp.add_argument("-O", "--diff-files", 
+            action="store_true")
     
     argp.add_argument("-S", "--servername",
             action="store")
@@ -68,6 +74,7 @@ def main():
     
     argp.add_argument("-C", "--command",
             action="store")
+
 
     argp.add_argument("files",nargs="*")
     
@@ -112,6 +119,13 @@ def main():
             print("No files specified")
             exit(1)
         vt(v,files)
+
+    if args.diff_files:
+        files = args.files
+        if files == None:
+            print("No files specified")
+            exit(1)
+        vdf(v,files)
 
     if args.command:
         vc(v,args.command)

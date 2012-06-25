@@ -64,8 +64,13 @@ class VimUtils(object):
                 "VimUtilsCommandOutput(\"%s\")" % command])
 
 
-    string = "Hello shithead"
-    liste = ["hello", "marting", "something", "something"]
+    def open_file(self,f):
+      f = os.path.realpath(f)
+      cmds = [self.vim, "--servername", self.server, "--remote-send", "<ESC>:e %s <CR>" % (f)]
+      if subprocess.call(cmds) != 0:
+        raise Exception
+      return True
+
     def open_files(self, files):
         for f in files:
             f = os.path.realpath(f)
@@ -73,6 +78,12 @@ class VimUtils(object):
             if subprocess.call(cmds) != 0:
                 raise Exception
         return True
+
+    def open_diff_files(self, files):
+      self.open_file(files[0])
+      for f in files[1:]:
+        f  = os.path.realpath(f)
+        self.run_command(":diffsplit %s" % (f))
 
 
     def open_tabs(self, files):
