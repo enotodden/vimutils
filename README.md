@@ -5,6 +5,8 @@ Vim utilities.
 
 A python module, vim plugin and command line utils to access
 a vim instance with a servername.
+This is mostly a wrapper for builtin vim functionality, but makes some tasks a lot
+easier/less annoying.
 
 ### Scripts:
 
