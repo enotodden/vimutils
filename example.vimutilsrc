@@ -1,6 +1,0 @@
-{
-    
-    "vim_cmd" : "gvim",
-    "default_server" : "my_main_vim_server_name"
-
-}

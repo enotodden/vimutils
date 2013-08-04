@@ -1,137 +1,147 @@
 vimutils
 ========
 
-Vim utilities.
-
-A python module, vim plugin and command line utils to access
-a vim instance with a servername.
-This is mostly a wrapper for builtin vim functionality, but makes some tasks a lot
-easier/less annoying.
-
-### Scripts:
-
-+ *vu* - Main script, called by all the other scripts
-
-#####Arguments:
-        usage: vu [-h] [-l] [-s] [-b] [-d DUMP_BUFFER] [-D] [-o] [-t] [-S SERVERNAME]
-                  [-r RCFILE] [-C COMMAND]
-                  [files [files ...]]
-
-        positional arguments:
-          files
-
-        optional arguments:
-            -h, --help            show this help message and exit
-            -l, --list-servers
-            -s, --start-server
-            -b, --list-buffers
-            -d DUMP_BUFFER, --dump-buffer DUMP_BUFFER
-            -D, --dump-session
-            -o, --open
-            -t, --tabs
-            -S SERVERNAME, --servername SERVERNAME
-            -r RCFILE, --rcfile RCFILE
-            -C COMMAND, --command COMMAND
+A command line tool for a working with a Vim server from the shell.
 
 
-            
-#####General Options:
-                -s, --servername
-                Select a servername, defaults to the 'default_server' entry
-                in the .vimutilsrc file
-                Applies to all actions, except --list-servers
+## Quick Example
 
-                -r, --rcfile
-                Use a different rc file than the default one.
-                Applies to all actions
+
+    $ vu start                  # Starts a vim server instance named 'DEFAULT'
+    $ vu open /etc/hosts        # Opens the /etc/hosts file in a new buffer
+
+
+## Setting Vim Binary To Use
+
+The Vim binary used defaults to 'gvim' (no full path),
+if you need to change this you can:
+
+Set the VIMUTILS\_VIM\_CMD environment variable:
+
+    $ export VIMUTILS_VIM_CMD=vim
+
+Or set it each time on the command line:
+
+    $ vu -c vim [....]
+
+Or just edit vu.py :)
 
 
 
 
-##### Actions:          
-                -l,--list-servers
-                List all instances of vim started with the --servername argument
+## Commands
 
-                -s,--start-server
-                Same as `vim --servername SERVERNAME`
+#### servers
 
-                -b, --list-buffers
-                Runs `:buffer` in the vim instance and returns it's output
+List running Vim servers
 
-                -d, --dump-buffer
-                Dumps a buffer specified by the buffer id(integer)
-                Example: vu -d 19
+    $ vu servers
+    MY_VIM
+    MY_OTHER_VIM
 
-                -D, --dump-session
-                Dumps the current vim buffers and metainfo as a json blob
-                
-                -o, --open
-                Opens the files specified with the :e command
+#### start
 
-                -t, --tabs 
-                Opens the files specified with the :tabnew command
+Start a new Vim server.
 
-                -C, --command
-                Run a command in the vim instance
+Starts a Vim server instance and sources a vimutils helpers vimscript
+in that instance.
 
+Start using the default servername:
 
+    $ vu start # Starts the server "DEFAULT"
 
-+ *vs* - Start vim with servername=SERVERNAME, same as: `vu -s`
-        
-        $ vs myservername
+Or provide a servername with the -s parameter
 
-    or just
+    $ vu -s my_vim_instance start
 
-        $ vs
-
-    equivalent to
-
-        $ gvim --servername myservername
-
-
-+ *ve* - Open files as buffers in current vim server, alias for: `vu --open`
-
-        $ ve myfile.txt myotherfile.txt 
-
-+ *vt* - Open files as tabs in current vim server, alias for: `vu --tabs`
-        
-        $ vt myfile.txt myotherfile.txt
-
-+ *vls* - List running servers, alias for: `vu --list-servers`
+Or use the VIMUTILS\_DEFAULT\_SERVERNAME environment variable to 
+set the servername (can be overridden by -s)
     
-        $ vls
-
-+ *vbls* - List open buffers, alias for: `vu --list-buffers`
-
-        $ vbls
-
-+ *vdb* - Dump buffer N, alias for: `vu --dump-buffer`
-
-        $ vdb 19
-
-+ *vds* - Dump session, print all buffers as a possibly huge json blob,alias for: `vu --dump-session`
-
-        $ vds
+    $ export VIMUTILS_DEFAULT_SERVERNAME="My_server_name"
+    $ vu start
 
 
-
-### RC File
-
-Copy example.vimutilsrc to /home/<username\>/.vimutilsrc
-
-+ "vim_cmd" : The command to use(vim, vimx, vi, gvim etc.)
-+ "default_server" : The default server name to use
+The environment variable and the -s parameters can be used with any command
+except for 'servers' and 'shell-aliases'.
 
 
+#### open
 
-### Install:
-    
-    $ sudo python setup.py install
-    $ cp example.vimutilsrc ~/.vimutilsrc
-    $ cp -rv plugin/* ~/.vim/plugin/
+Open one or more files as buffers in the vim instance.
+
+    $ vu open /path/to/my/file.txt /path/to/my/other/file.txt
+
+#### tabs
+
+Same as 'open' but uses :tabnew
+
+#### diff
+
+Open a set of files in a diff-split view.
+
+    $ vu diff ./file1.txt ./file2.txt
+
+#### buffers
+
+List all the buffers in the Vim instance in plain text(default)
+or JSON format.
+This works like ':buffers' except for writing output
+to the shell instead of inside Vim.
+
+    $ vu buffers
+
+Or, as JSON:
+
+    $ vu buffers --json
+
+
+#### dump-buffer
+
+Prints the contents of a buffer by buffer id (buffer number).
+
+    $ vu dump-buffer 5
+
+#### keys
+
+Sends a string of keys to a Vim instance.
+
+    $ vu keys ':echo "Hello Vim" <CR>'
+
+#### run
+
+Runs a command in the Vim instance prints the output.
+
+    $ vu run ":ls"
 
 
 
-### TODO:
-+ Add default_server switching
-+ ?
+
+
+
+Usage:
+
+
+
+    usage: vu.py [-h] [-c VIM_COMMAND] [-s SERVERNAME]
+                 
+                 {servers,start,open,tabs,diff,buffers,dump-buffer,grep,keys,run,shell-aliases}
+                 ...
+
+    positional arguments:
+      {servers,start,open,tabs,diff,buffers,dump-buffer,grep,keys,run,shell-aliases}
+        servers             List running vim servers.
+        start               Start a vim server.
+        open                Open file(s).
+        tabs                Open file(s) in tab(s).
+        diff                Diff files
+        buffers             List buffers.
+        dump-buffer         Print the contents of a buffer (by buffer number)
+        keys                Send a string of keys to the target vim server
+        run                 Run a command and print the output.
+            shell-aliases       Print a set of nice-to-have shell functions for your
+                            .(bash|zsh)rc
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c VIM_COMMAND, --vim-command VIM_COMMAND
+      -s SERVERNAME, --servername SERVERNAME
