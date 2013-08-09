@@ -10,6 +10,9 @@ import StringIO
 import time
 import tempfile
 
+DEFAULT_VIM = "gvim"
+DEFAULT_SERVER = "default"
+
 START_SERVER = "{vim} --servername {servername}"
 
 LIST_SERVERS = "{vim} --serverlist"
@@ -18,8 +21,6 @@ RUN_COMMAND = """{vim} --servername {servername} --remote-expr \
 'VimUtilsCommandOutput(\"{cmd}\")'"""
 
 OPEN_TABS = """{vim} --servername {servername} --remote-tab-silent {files}"""
-
-OPEN = """{vim} --servername {servername} --remote {files}"""
 
 DUMP_BUFFER = """{vim} --servername {servername} --remote-expr \
 'VimUtilsWriteBufferToTmpFile(\"{bufno}\")'"""
@@ -130,18 +131,22 @@ class Server:
     def open(self, files):
         if type(files) != list:
             files = [files]
-        return os.system(OPEN.format(vim=self.vim, 
-                                     servername=self.servername,
-                                     files=" ".join(files)))
+        files = [os.path.realpath(f) for f in files]
+        for f in files:
+            r, out, err = self.run(":e "+f)
 
     def open_tabs(self, files):
         if type(files) != list:
             files = [files]
+        files = [os.path.realpath(f) for f in files]
         return os.system(OPEN_TABS.format(vim=self.vim,
                                           servername=self.servername,
                                           files=" ".join(files)))
 
     def open_diff(self, files):
+        if type(files) != list:
+            files = [files]
+        files = [os.path.realpath(f) for f in files]
         self.open(files[0])
         for f in files[1:]:
             f = os.path.realpath(f)
@@ -218,13 +223,10 @@ class Server:
                 out.append(self.dump_buffer(buf["id"]))
         return out
 
-    
     def search_buffers(self, expr, **kwargs):
-        
         buffers = self.buffers()
         expr = re.compile(expr)
         matches = []
-
         for buf in buffers:
             lines = self.dump_buffer(buf["id"]).split("\n")
             lineno = 1
@@ -238,28 +240,25 @@ class Server:
                 lineno = lineno + 1
         return matches
 
-def get_config():
-    conf = {
-        "vim" : "gvim",
-        "default_server" : "default"
-    }
+def config():
+    vim = os.environ.get("VIMUTILS_VIM", DEFAULT_VIM),
+    default_server = os.environ.get("VIMUTILS_DEFAULT_SERVER", DEFAULT_SERVER)
     config_file = os.path.join(os.environ["HOME"], ".vimutils.json")
     if os.path.isfile(config_file):
         with open(config_file) as f:
             c = json.loads(f.read())
-            if "vim" in c:
-                conf["vim"] = c["vim"]
-            if "default_server" in c:
-                conf["default_server"] = c["default_server"]
-
+            vim = c["vim"]
+            default_server = c["default_server"]
+    return vim, default_server
 
 
 def vimutils(servername=None, **kwargs):
+    c_vim, c_default_server = config()
     vim = kwargs.get("vim", None)
     if not vim:
-        vim = os.environ.get("VIMUTILS_VIM_CMD", "gvim")
+        vim = c_vim
     if not servername:
-        servername = os.environ.get("VIMUTILS_DEFAULT_SERVERNAME", "default")
+        servername = c_default_server
     s = Server(servername, vim)
     return s
 
@@ -279,7 +278,6 @@ def handle_start(s, args):
 
 def handle_open(s, args):
     s.open(args.files)
-
 
 def handle_tabs(s, args):
     s.open_tabs(args.files)
@@ -317,26 +315,37 @@ def handle_run(s, args):
     r, out, err = s.run(args.cmdstr)
     print(out)
 
+SHELL_ALIASES = [
+    ("vs", "start"),
+    ("ve", "open"),
+    ("vt", "tabs"),
+    ("vd", "diff"),
+    ("vls", "servers"),
+    ("vbls", "buffers"),
+    ("vdb", "dump-buffer"),
+    ("vr", "run"),
+    ("vk", "keys"),
+    ("vgrep", "grep")
+]
 
-SHELL_ALIASES = """\
-ve () {{
-    {vu} open "$@";
-}}
-
-vt () {{
-    {vu} tabs "$@";
-}}
-
-vd () \{{
-    {vu} diff "$@";
+SHELL_ALIAS = """
+{alias} () {{
+    {vu} {args} "$@";
 }}
 """
 
 def handle_shell_aliases(s, args):
+    out = ""
     path = os.path.realpath(__file__)
     if args.no_full_path:
         path = os.path.basename(path)
-    print(SHELL_ALIASES.format(vu=path))
+
+    for item in SHELL_ALIASES:
+        alias, args = item
+        out += SHELL_ALIAS.format(vu=path,
+                                  alias=alias,
+                                  args=args)
+    print(out)
 
 def main():
 
