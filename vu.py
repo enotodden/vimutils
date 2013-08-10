@@ -9,6 +9,7 @@ import subprocess
 import StringIO
 import time
 import tempfile
+import fnmatch
 
 DEFAULT_VIM = "gvim"
 DEFAULT_SERVER = "default"
@@ -60,6 +61,8 @@ HELP_TABS = "Open file(s) in tab(s)."
 HELP_DIFF = "Diff files"
 HELP_BUFFERS = "List buffers."
 HELP_DUMP_BUFFER = "Print the contents of a buffer (by buffer number)"
+HELP_DUMP_FILE = """Print the contents of the buffer with the first filename
+matching PATTERN"""
 HELP_GREP = "Search the buffers using a Python regular expression."
 HELP_KEYS = "Send a string of keys to the target vim server"
 HELP_RUN = "Run a command and print the output."
@@ -219,9 +222,22 @@ class Server:
     def dump_buffers(self):
         out = []
         for buf in self.buffers():
-            if buf["id"]:
-                out.append(self.dump_buffer(buf["id"]))
+            out.append(self.dump_buffer(buf["id"]))
         return out
+
+    def dump_files(self, pattern, wildcards=True):
+        out = []
+        for buf in self.buffers():
+            match = False
+            if wildcards:
+                match = fnmatch.fnmatch(buf["file"], pattern)
+            else:
+                match = (pattern == buf["file"])
+            if match:
+                out.append({"filename": buf["file"],
+                            "content": self.dump_buffer(buf["id"])})
+        return out
+
 
     def search_buffers(self, expr, **kwargs):
         buffers = self.buffers()
@@ -294,6 +310,13 @@ def handle_buffers(s, args):
 
 def handle_dump_buffer(s, args):
     print(s.dump_buffer(args.bufno))
+
+def handle_dump_file(s, args):
+    wc = not args.exact
+    files = s.dump_files(args.pattern, wc)
+    if not files:
+        exit(1)
+    print(files[0]["content"])
 
 def handle_grep(s, args):
     try:
@@ -381,6 +404,13 @@ def main():
     argp_dump_buffer = subp.add_parser("dump-buffer", help=HELP_DUMP_BUFFER)
     argp_dump_buffer.add_argument("bufno", type=int, action="store")
     argp_dump_buffer.set_defaults(func=handle_dump_buffer)
+
+    argp_dump_file = subp.add_parser("dump-file", help=HELP_DUMP_FILE)
+    argp_dump_file.add_argument("pattern", action="store")
+    argp_dump_file.add_argument("-e","--exact", action="store_true",
+                                help="Only exact match (no wildcards)")
+    argp_dump_file.set_defaults(func=handle_dump_file)
+
 
     argp_grep = subp.add_parser("grep")
     argp_grep.add_argument("expr", action="store")
