@@ -13,6 +13,7 @@ import fnmatch
 
 DEFAULT_VIM = "gvim"
 DEFAULT_SERVER = "default"
+START_SERVER_TIMEOUT = 5
 
 START_SERVER = "{vim} --servername {servername}"
 
@@ -66,10 +67,9 @@ matching PATTERN"""
 HELP_GREP = "Search the buffers using a Python regular expression."
 HELP_KEYS = "Send a string of keys to the target vim server"
 HELP_RUN = "Run a command and print the output."
-
-HELP_SHELL_ALIASES = "Print a set of nice-to-have shell functions for your .(bash|zsh)rc"
+HELP_SHELL_ALIASES = "Print a set of nice-to-have shell "\
+                     "functions for your .(bash|zsh)rc"
 HELP_NO_FULL_PATH = "Don't use the full path of this script"
-
 
 
 def sh(cmd):
@@ -120,9 +120,14 @@ class Server:
         r = os.system(START_SERVER.format(vim=self.vim,
                                           servername=self.servername))
         # Wait for server to start
+        waited = 0
         while not self.is_running():
-            time.sleep(0.1)
-
+            if waited == START_SERVER_TIMEOUT:
+                sys.stderr.write("Timed out while trying to "
+                                 "start server '%s'\n" % self.servername)
+                return False
+            time.sleep(1)
+            waited = waited + 1
         if r == 0:
             r, out, err = self.send_keys(":source "+tf.name+" <CR>")
             if r != 0:
@@ -163,13 +168,11 @@ class Server:
         r, out, err = self.run(":buffers")
         lines = out.strip().split("\n")
         bufs = []
-
         for line in lines:
             bufar = re.split('\s+',line.strip().replace("line",""))
             if len(bufar) == 3:
                 bufar.insert(1,"") #If theres no mode, insert None
             bufar[2] = bufar[2].replace("\"", "")
-
             buf = {
                 "id" : int(bufar[0]),
                 "mode" : bufar[1],
@@ -185,7 +188,6 @@ class Server:
                 "modified" : False,
                 "readerrors" : False
             }
-
             for m in bufar[1]:
                 if m == "u":
                     buf["unlisted"] = True
@@ -209,7 +211,6 @@ class Server:
                     continue
             bufs.append(buf)
         return bufs
-
 
     def dump_buffer(self, bufno):
         r, out, err = sh(DUMP_BUFFER.format(vim=self.vim,
@@ -238,7 +239,6 @@ class Server:
                             "content": self.dump_buffer(buf["id"])})
         return out
 
-
     def search_buffers(self, expr, **kwargs):
         buffers = self.buffers()
         expr = re.compile(expr)
@@ -266,7 +266,6 @@ def config():
             vim = c["vim"]
             default_server = c["default_server"]
     return vim, default_server
-
 
 def vimutils(servername=None, **kwargs):
     c_vim, c_default_server = config()
@@ -297,7 +296,6 @@ def handle_open(s, args):
 
 def handle_tabs(s, args):
     s.open_tabs(args.files)
-
 
 def handle_diff(s, args):
     s.open_diff(args.files)
@@ -370,8 +368,8 @@ def handle_shell_aliases(s, args):
                                   args=args)
     print(out)
 
-def main():
 
+def main():
     argp = argparse.ArgumentParser()
     subp = argp.add_subparsers()
 
@@ -411,7 +409,6 @@ def main():
                                 help="Only exact match (no wildcards)")
     argp_dump_file.set_defaults(func=handle_dump_file)
 
-
     argp_grep = subp.add_parser("grep")
     argp_grep.add_argument("expr", action="store")
     argp_grep.set_defaults(func=handle_grep)
@@ -434,16 +431,12 @@ def main():
 
     args = argp.parse_args()
     s = vimutils(args.servername, vim=args.vim_command)
-
     if args.func not in [handle_start, handle_servers,
                          handle_shell_aliases]:
         if not s.is_running():
             s.start()
-
     args.func(s,args)
-
 
 
 if __name__ == "__main__":
     main()
-
